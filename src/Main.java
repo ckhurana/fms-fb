@@ -3,14 +3,17 @@ import com.restfb.DefaultFacebookClient;
 import com.restfb.FacebookClient;
 import com.restfb.Parameter;
 import com.restfb.types.*;
+import data.Student;
+
 import java.util.List;
 
 public class Main {
-    private static final String ACCESS_TOKEN = "EAAH2Q9mqaZAcBAMLFZCJbwi6OpvnNt2FnbZCb5YMC4yoRaflnOy84wgU9FRnH4A9mZBtrMdAiNi9LyO8zVsxM9vLhc8wGoDIvc7AV5Qj3h93NXUz7h44mh99u1zb9GZB4LZBrKs7tqOycNKKLdLzTBSkIg976TuMZCfH0mzF6RNq0ctix5XhE3e3nZBokN9FsQoZD";
+    private static final String ACCESS_TOKEN = "EAAH2Q9mqaZAcBALyKgnegJ8ZC01EV9yuphZByCnPjYZCcOTlqEATGMTeFtFaMXRZAu1YZAN534XaQ5douIXHfEyfKkZAVycNMunH4UureIyxKPUgsal7b3vX6PzawfbX9wnhY65ZCf4J80aTJvLeoef1x898BVFpbOzPZChCYKTldqVJGDjAVmwNWDQ7VrZCr0VMAyKv4HMQ1McQZDZD";
     private static final String PAGE_ID = "fiiitd";
 
     public static void main(String[] args) {
         FacebookClient facebookClient = new DefaultFacebookClient(ACCESS_TOKEN);
+        DbConnect dbConnect = new DbConnect();
 
         // Get our default facebook page for the system
         Page page = facebookClient.fetchObject(PAGE_ID, Page.class);
@@ -19,13 +22,32 @@ public class Main {
         // Fetch all the messages from the page feed
         Connection<Post> postsFetch = facebookClient.fetchConnection(PAGE_ID + "/feed",
                 Post.class,
-                Parameter.with("fields", "commentsCount,from,message,comments.limit(10){from{id,name},message}")
+                Parameter.with("fields", "id, message, from{id, name}, updated_time, comments.limit(10){id, from{id, name}, message}")
         );
 
         for (List<Post> posts : postsFetch) {
             println("\nFeed:");
             for (Post post : posts) {
-                println(post.getId() + ": " + post.getMessage() + " :: " + post.getFrom().getName());
+                String id = post.getId();
+                CategorizedFacebookType user = post.getFrom();
+                String msg = post.getMessage();
+                println("\n" + id + ": " + msg + " :: " + user.getName());
+
+                String[] command = msg.toUpperCase().split(" ");
+                switch (command[0]) {
+                    case "ADDS":
+                        Student student = new Student(user.getId(), user.getName().split(" ")[0], user.getName().split(" ")[1], command[2], command[1]);
+                        int i = dbConnect.addStudent(student);
+                        if (i > 0) {
+                            println("Succesfully added user: " + student);
+                        }
+                        break;
+                }
+
+                if (msg.startsWith("ADDS ")) {
+
+                }
+
                 if(post.getComments() != null) {
                     Comments comments = post.getComments();
                     println("\tComments:");
@@ -35,6 +57,10 @@ public class Main {
                 }
             }
         }
+
+
+
+//        dbConnect.readDb();
 
     }
 

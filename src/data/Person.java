@@ -1,26 +1,16 @@
 package data;
 
 public class Person {
-    private int id;
     private String fbId;
     private String firstName;
     private String lastName;
-    private int phone;
+    private String phone;
 
-    public Person(int id, String fbId, String firstName, String lastName, int phone) {
-        this.id = id;
+    public Person(String fbId, String firstName, String lastName, String phone) {
         this.fbId = fbId;
         this.firstName = firstName;
         this.lastName = lastName;
         this.phone = phone;
-    }
-
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
     }
 
     public String getFirstName() {
@@ -39,11 +29,11 @@ public class Person {
         this.lastName = lastName;
     }
 
-    public int getPhone() {
+    public String getPhone() {
         return phone;
     }
 
-    public void setPhone(int phone) {
+    public void setPhone(String phone) {
         this.phone = phone;
     }
 
