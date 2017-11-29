@@ -178,10 +178,11 @@ public class DbConnect {
         try {
             Class.forName("com.mysql.jdbc.Driver");
             connection = DriverManager.getConnection("jdbc:mysql://localhost/fiiitd?user=root&password=Pass@123&useSSL=false");
-            preparedStatement = connection.prepareStatement("UPDATE employee SET `isBusy` = ? " +
+            preparedStatement = connection.prepareStatement("UPDATE employee SET `isBusy` = ?, `taskCount` = ? " +
                     "WHERE `fbId` = ?");
             preparedStatement.setBoolean(1, emp.isBusy());
-            preparedStatement.setString(2, emp.getFbId());
+            preparedStatement.setInt(2, emp.getTaskCount());
+            preparedStatement.setString(3, emp.getFbId());
             count = preparedStatement.executeUpdate();
         } catch (ClassNotFoundException | SQLException e) {
             e.printStackTrace();
@@ -332,6 +333,25 @@ public class DbConnect {
             employees.add(e);
         }
         return employees;
+    }
+
+    public HashMap<String, Integer> getTotalEmployeeTasks() {
+        HashMap<String, Integer> res = new HashMap<>();
+        try {
+            Class.forName("com.mysql.jdbc.Driver");
+
+            connection = DriverManager.getConnection("jdbc:mysql://localhost/fiiitd?user=root&password=Pass@123&useSSL=false");
+            preparedStatement = connection.prepareStatement("SELECT `employeeId`, COUNT(*) FROM task GROUP BY `employeeId`");
+            ResultSet rs = preparedStatement.executeQuery();
+            while (rs.next()) {
+                res.put(rs.getString("employeeId"), rs.getInt(2));
+            }
+        } catch (ClassNotFoundException | SQLException e) {
+            e.printStackTrace();
+        } finally {
+            close();
+        }
+        return res;
     }
 
 }

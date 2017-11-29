@@ -13,9 +13,11 @@ import java.util.*;
 public class Main {
     private static final String ACCESS_TOKEN = "EAACEdEose0cBAIsC5P2CschmmM3V36U9obMtGJd2EiBz19fY3uLSZC62CwZBgknEmoBvCOOyFhJrv5xeDXs6MsQvAMfHZBYlRk1EnzZBZAFgSOIJ9E9fyGzA0MSCsGkIoKKTNktnhDqepbw5ZAvMSJUmXp0g3ZCUK2B5ZC1XngFmZC5CSm52S8MQdCc9IwuIBVQn2KZAddKfnV0wZDZD";
     private static final String PAGE_ID = "fiiitd";
-    private static final long TIME_MARGIN = 60 * 24;
-    private static final int REPORT_THRESHOLD = 10;
-    private static final long REFRESH_RATE = 1000 * 120;
+//    private static final long TIME_MARGIN = 60 * 24;
+    private static final long TIME_MARGIN = 2;
+//    private static final int REPORT_THRESHOLD = 10;
+    private static final int REPORT_THRESHOLD = 1;
+    private static final long REFRESH_RATE = 1000 * 20;
 
     private static int counter = 0;
 
@@ -52,9 +54,6 @@ public class Main {
                         String msg = post.getMessage();
                         Utilities.println("\n" + id + ": " + msg + " :: " + user.getName() + " :: " + post.getCreatedTime());
 
-                        // POST a Comment
-                        // facebookClient.publish(post.getId() + "/comments", Comment.class, Parameter.with("message", "test"));
-
                         String[] command = msg.toUpperCase().split(" ");
                         int res;
                         switch (command[0]) {
@@ -63,6 +62,7 @@ public class Main {
                                 res = dbConnect.addStudent(student);
                                 if (res > 0) {
                                     Utilities.println("Successfully added student: " + student);
+                                    Utilities.addComment(facebookClient, post.getId(), "Successfully registered as student.");
                                 }
                                 break;
                             case "ADDE":
@@ -70,6 +70,7 @@ public class Main {
                                 res = dbConnect.addEmployee(emp);
                                 if (res > 0) {
                                     Utilities.println("Successfully added employee: " + emp);
+                                    Utilities.addComment(facebookClient, post.getId(), "Successfully registered as employee.");
                                 }
                                 break;
                             case "REQ":
@@ -81,7 +82,7 @@ public class Main {
                                                 user.getId(), "", Utilities.JobType.UNKNOWN, new Timestamp(post.getCreatedTime().getTime()));
                                         task.setError(true);
                                         if (!dbConnect.hasTask(post.getId()))
-                                            Utilities.addComment(facebookClient, post, "Incorrect command format, please fix the command.");
+                                            Utilities.addComment(facebookClient, post.getId(), "Incorrect command format, please fix the command.");
                                         else
                                             task = null;
                                     } else {
@@ -113,7 +114,7 @@ public class Main {
                                 break;
                             default:
                                 Utilities.println("Unidentified command detected!!!");
-
+                                Utilities.addComment(facebookClient, post.getId(), "Unidentified command detected!!!");
                         }
 
                         if(post.getComments() != null) {
@@ -142,12 +143,14 @@ public class Main {
                             String uid = comment.getFrom().getId();
                             Employee e = employees.get(task.getEmployeeId());
                             if (mesg.equals("DONE")
-                                    && (uid.equals(e.getFbId()) || uid.equals(page.getId()))) {
+                                    && (uid.equals(e.getFbId()) || uid.equals(page.getId()) || uid.equals(task.getUserId()))) {
                                 Utilities.println("Task " + task.getId() + " completed successfully.");
-                                if(Utilities.isValidTimeDiff(task.getTimestamp(), new Timestamp(comment.getCreatedTime().getTime()), TIME_MARGIN, "sec"))
-                                    //TODO: check time difference within limit
+                                Utilities.println("LOG: " + task.getTimestamp() + " : " + new Timestamp(comment.getCreatedTime().getTime()));
+                                Utilities.println("LOG: " + Utilities.getTimeDiff(task.getTimestamp(), new Timestamp(comment.getCreatedTime().getTime()), "SEC"));
+                                if(Utilities.isValidTimeDiff(task.getTimestamp(), new Timestamp(comment.getCreatedTime().getTime()), TIME_MARGIN, "sec")) {
                                     e.setTaskCount(e.getTaskCount() + 1);
-                                else
+                                    Utilities.println("LOG: " + Utilities.getTimeDiff(task.getTimestamp(), new Timestamp(comment.getCreatedTime().getTime()), "SEC"));
+                                } else
                                     task.setLate(true);
                                 e.setBusy(false);
                                 task.setDone(true);
@@ -166,7 +169,6 @@ public class Main {
 
                 Utilities.println("\n---- Checking Feedback Status ----");
 
-                // TODO: to check for negative feedback
                 ArrayList<Task> feedbackPendingTasks = dbConnect.getFeedbackPendingTasks();
 
                 for (Task task : feedbackPendingTasks) {
@@ -175,26 +177,40 @@ public class Main {
                     for (Comment comment : comments.getData()) {
                         if (comment.getMessage().trim().toUpperCase().startsWith("FEEDBACK:"))
                             flag = true;
-                        if (comment.getFrom().getId().equals(task.getUserId()) && comment.getMessage().trim().length() > 0 && comment.getMessage().trim().length() < 2 && flag) {
+                        else {
                             try {
-                                int feedback = Integer.parseInt(comment.getMessage().trim());
-                                if (feedback >= 0 && feedback <= 5) {
-                                    task.setFeedback(feedback);
-                                    String msg;
-                                    if (feedback < 3) {
-                                        Employee e = employees.get(task.getEmployeeId());
-                                        e.setTaskCount(e.getTaskCount() - 1);
-                                        dbConnect.updateEmployee(e);
-                                        msg = "Thanks for the feedback. We'll try to improve our services.";
-                                    } else
-                                        msg = "Thanks for the positive feedback. We love to serve our users.";
-                                    dbConnect.updateTask(task);
-                                    Utilities.addComment(facebookClient, task.getFbPostId(), msg);
-                                    break;
-                                } else
+                                if (comment.getFrom().getId().equals(task.getUserId())
+                                        && comment.getMessage().trim().length() > 0
+                                        && comment.getMessage().trim().length() < 2
+                                        && comments.getData().indexOf(comment) == comments.getData().size() - 1
+                                        && flag) {
+                                    int feedback = Integer.parseInt(comment.getMessage().trim());
+                                    if (feedback >= 0 && feedback <= 5) {
+                                        task.setFeedback(feedback);
+                                        String msg;
+                                        if (feedback < 3) {
+                                            Employee e = employees.get(task.getEmployeeId());
+                                            if (!task.isLate())
+                                                e.setTaskCount(e.getTaskCount() - 1);
+                                            dbConnect.updateEmployee(e);
+                                            msg = "Thanks for the feedback. We'll try to improve our services.";
+                                        } else
+                                            msg = "Thanks for the positive feedback. We love to serve our users.";
+                                        dbConnect.updateTask(task);
+                                        Utilities.addComment(facebookClient, task.getFbPostId(), msg);
+                                        break;
+                                    } else {
+                                        throw new Exception();
+                                    }
+                                } else if (comment.getFrom().getId().equals(task.getUserId())) {
                                     throw new Exception();
+                                }
                             } catch (Exception e) {
-                                Utilities.addComment(facebookClient, task.getFbPostId(), "Incorrect feedback format, please enter an integer between 0 - 5.");
+                                if(comments.getData().get(comments.getData().size() - 1).equals(comment)) {
+                                    Utilities.println("Invalid Input!!!");
+                                    Utilities.addComment(facebookClient, task.getFbPostId(), "Incorrect feedback format, please enter an integer between 0 - 5.");
+                                }
+
                             }
                         }
                     }
@@ -203,6 +219,10 @@ public class Main {
 
                 Utilities.println("\n---- Checking Employee Status ----");
                 // TODO: check employee integrity
+                HashMap<String, Integer> tasksAssigned = dbConnect.getTotalEmployeeTasks();
+                ArrayList<Employee> defaulterEmployees = Utilities.getDefaulters(employees, tasksAssigned, REPORT_THRESHOLD);
+                Utilities.reportEmployees(defaulterEmployees);
+
 
 
 
@@ -244,7 +264,7 @@ public class Main {
                 if(dbConnect.updateEmployee(employee)) {
                     String msg = "NOTIFICATION: Task successfully assigned to " + employee.getFirstName() + " " + employee.getLastName() + " (Mob. No.: " + employee.getPhone() + ")";
                     Utilities.println("Successfully assigned task for task " + task.getId() + " to " + employee.getFirstName());
-                    Utilities.addComment(facebookClient, task.getFbPostId(), msg, employee.getFbId());
+                    Utilities.addComment(facebookClient, task.getFbPostId(), msg);
                 } else {
                     task.setProcessed(false);
                     task.setEmployeeId("");

@@ -34,7 +34,7 @@ CREATE TABLE task (
     userId VARCHAR(60) NOT NULL,
     employeeId VARCHAR(60),
     loc VARCHAR(50) NOT NULL,
-    timestamp TIMESTAMP,
+    timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     type INT NOT NULL DEFAULT 0,
     isDone TINYINT(1) DEFAULT 0,
     isProcessed TINYINT(1) DEFAULT 0,
