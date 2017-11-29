@@ -35,11 +35,12 @@ CREATE TABLE task (
     employeeId VARCHAR(60),
     loc VARCHAR(50) NOT NULL,
     timestamp TIMESTAMP,
-    type INT NOT NULL,
+    type INT NOT NULL DEFAULT 0,
     isDone TINYINT(1) DEFAULT 0,
     isProcessed TINYINT(1) DEFAULT 0,
     isError TINYINT(1) DEFAULT 0,
-    isLate TINYINT(1) DEFAULT 0
+    isLate TINYINT(1) DEFAULT 0,
+    feedback INT DEFAULT -2
 );
 
 
@@ -58,8 +59,9 @@ CREATE TABLE employee (
     firstName VARCHAR(60),
     lastName VARCHAR(60),
     phone VARCHAR(10),
-    profession INT,
-    isBusy TINYINT(1)
+    profession INT DEFAULT 0,
+    isBusy TINYINT(1) DEFAULT 0,
+    taskCount INT DEFAULT 0
 );
 
 

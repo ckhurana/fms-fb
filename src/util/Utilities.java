@@ -9,9 +9,12 @@ import com.restfb.types.User;
 import data.Employee;
 import data.Task;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Scanner;
 
 public class Utilities {
 
@@ -28,12 +31,12 @@ public class Utilities {
     }
 
     public enum JobType {
+        UNKNOWN,
         ELECTRICIAN,
         SWEEPER,
         GARDENER,
         CARPENTER,
-        MASON,
-        UNKNOWN
+        MASON
     }
 
     public static JobType getJobType(String t) {
@@ -80,6 +83,10 @@ public class Utilities {
             return true;
         else
             return false;
+    }
+
+    public static String getAccessToken() throws FileNotFoundException {
+        return new Scanner(new File("AccessToken.txt")).useDelimiter("\\Z").next();
     }
 
 }
