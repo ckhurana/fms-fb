@@ -1,3 +1,4 @@
+import com.mysql.jdbc.StringUtils;
 import com.restfb.*;
 import com.restfb.types.*;
 import data.Employee;
@@ -13,11 +14,11 @@ import java.util.*;
 public class Main {
     private static final String ACCESS_TOKEN = "EAACEdEose0cBAIsC5P2CschmmM3V36U9obMtGJd2EiBz19fY3uLSZC62CwZBgknEmoBvCOOyFhJrv5xeDXs6MsQvAMfHZBYlRk1EnzZBZAFgSOIJ9E9fyGzA0MSCsGkIoKKTNktnhDqepbw5ZAvMSJUmXp0g3ZCUK2B5ZC1XngFmZC5CSm52S8MQdCc9IwuIBVQn2KZAddKfnV0wZDZD";
     private static final String PAGE_ID = "fiiitd";
-//    private static final long TIME_MARGIN = 60 * 24;
-    private static final long TIME_MARGIN = 2;
-//    private static final int REPORT_THRESHOLD = 10;
-    private static final int REPORT_THRESHOLD = 1;
-    private static final long REFRESH_RATE = 1000 * 20;
+    private static final long TIME_MARGIN = 60 * 24;
+//    private static final long TIME_MARGIN = 1;  // Testing
+    private static final int REPORT_THRESHOLD = 10;
+//    private static final int REPORT_THRESHOLD = 2;  // Testing
+    private static final long REFRESH_RATE = 1000 * 60;
 
     private static int counter = 0;
 
@@ -41,7 +42,7 @@ public class Main {
                 // Fetch all the messages from the page feed
                 Connection<Post> postsFetch = facebookClient.fetchConnection(PAGE_ID + "/feed",
                         Post.class,
-                        Parameter.with("fields", "id, message, from{id, name}, updated_time, created_time, comments.limit(10){id, from{id, name}, message}")
+                        Parameter.with("fields", "id, message, from{id, name}, updated_time, created_time, comment_count, comments.limit(10){id, from{id, name}, message}")
                 );
 
                 Utilities.println("\n---- Checking New Posts ----");
@@ -58,19 +59,39 @@ public class Main {
                         int res;
                         switch (command[0]) {
                             case "ADDS":
-                                Student student = new Student(user.getId(), user.getName().split(" ")[0], user.getName().split(" ")[1], command[1], command[2]);
-                                res = dbConnect.addStudent(student);
-                                if (res > 0) {
-                                    Utilities.println("Successfully added student: " + student);
-                                    Utilities.addComment(facebookClient, post.getId(), "Successfully registered as student.");
+                                if (!dbConnect.hasStudent(user.getId()) && !dbConnect.hasEmployee(user.getId())) {
+                                    String phone = command[1];
+                                    if (phone.length() == 10 && StringUtils.isStrictlyNumeric(phone)) {
+                                        Student student = new Student(user.getId(), user.getName().split(" ")[0], user.getName().split(" ")[1], phone, command[2]);
+                                        res = dbConnect.addStudent(student);
+                                        if (res > 0) {
+                                            Utilities.println("Successfully added student: " + student);
+                                            Utilities.addComment(facebookClient, post.getId(), "Successfully registered as student.");
+                                        }
+                                    } else {
+                                        Utilities.println("Phone number not valid");
+                                    }
+                                } else {
+                                    Utilities.println("Already Registered as a student or employee!!!");
+//                                    Utilities.addComment(facebookClient, post.getId(), "Already Registered as a student or employee!!!");
                                 }
                                 break;
                             case "ADDE":
-                                Employee emp = new Employee(user.getId(), user.getName().split(" ")[0], user.getName().split(" ")[1], command[1], Utilities.JobType.valueOf(command[2]));
-                                res = dbConnect.addEmployee(emp);
-                                if (res > 0) {
-                                    Utilities.println("Successfully added employee: " + emp);
-                                    Utilities.addComment(facebookClient, post.getId(), "Successfully registered as employee.");
+                                if (!dbConnect.hasStudent(user.getId()) && !dbConnect.hasEmployee(user.getId())) {
+                                    String phone = command[1];
+                                    if (phone.length() == 10 && StringUtils.isStrictlyNumeric(phone)) {
+                                        Employee emp = new Employee(user.getId(), user.getName().split(" ")[0], user.getName().split(" ")[1], phone, Utilities.JobType.valueOf(command[2]));
+                                        res = dbConnect.addEmployee(emp);
+                                        if (res > 0) {
+                                            Utilities.println("Successfully added employee: " + emp);
+                                            Utilities.addComment(facebookClient, post.getId(), "Successfully registered as employee.");
+                                        }
+                                    } else {
+                                        Utilities.println("Phone number not valid");
+                                    }
+                                } else {
+                                    Utilities.println("Already Registered as a student or employee!!!");
+//                                    Utilities.addComment(facebookClient, post.getId(), "Already Registered as a student or employee!!!");
                                 }
                                 break;
                             case "REQ":
@@ -95,6 +116,7 @@ public class Main {
                                             Task task2 = dbConnect.getTask(post.getId());
                                             if(task2.isError()) {
                                                 task.setTimestamp(new Timestamp(post.getUpdatedTime().getTime()));
+                                                task.setError(false);
                                                 if(dbConnect.updateTask(task)) {
                                                     Utilities.println("Request from " + user.getName() + " successfully registered.");
                                                 }
@@ -110,11 +132,26 @@ public class Main {
                                                 Utilities.println("Successfully added Task for processing!!!");
                                         }
                                     }
+                                } else {
+                                    task = new Task(post.getId(), post.getMessage(), user.getId(), "", Utilities.JobType.UNKNOWN);
+                                    task.setError(true);
+                                    if (!dbConnect.hasTask(task.getFbPostId())) {
+                                        dbConnect.addTask(task);
+                                        Utilities.addComment(facebookClient, post.getId(), "You cannot avail the facility of FIIITD.\n" +
+                                                "Either you are an employee or have not registered as a student.");
+                                    }
+
                                 }
+
                                 break;
                             default:
-                                Utilities.println("Unidentified command detected!!!");
-                                Utilities.addComment(facebookClient, post.getId(), "Unidentified command detected!!!");
+                                task = new Task(post.getId(), post.getMessage(), user.getId(), "", Utilities.JobType.UNKNOWN);
+                                task.setError(true);
+                                if (!dbConnect.hasTask(task.getFbPostId())) {
+                                    dbConnect.addTask(task);
+                                    Utilities.println("Unidentified command detected!!!");
+                                    Utilities.addComment(facebookClient, post.getId(), "Unidentified command!!!");
+                                }
                         }
 
                         if(post.getComments() != null) {
@@ -248,8 +285,8 @@ public class Main {
                     e.printStackTrace();
                 }
             } catch (Exception e) {
+                e.printStackTrace();
                 Thread.sleep(REFRESH_RATE);
-                continue;
             }
 
         }

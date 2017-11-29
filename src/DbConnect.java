@@ -354,4 +354,41 @@ public class DbConnect {
         return res;
     }
 
+    public boolean hasStudent(String id) {
+        boolean res = false;
+        try {
+            Class.forName("com.mysql.jdbc.Driver");
+            connection = DriverManager.getConnection("jdbc:mysql://localhost/fiiitd?user=root&password=Pass@123&useSSL=false");
+            preparedStatement = connection.prepareStatement("SELECT * FROM student WHERE `fbId` = ? ");
+            preparedStatement.setString(1, id);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            if (resultSet.next()) {
+                res = true;
+            }
+        } catch (ClassNotFoundException | SQLException e) {
+            e.printStackTrace();
+        } finally {
+            close();
+        }
+        return res;
+    }
+
+    public boolean hasEmployee(String id) {
+        boolean res = false;
+        try {
+            Class.forName("com.mysql.jdbc.Driver");
+            connection = DriverManager.getConnection("jdbc:mysql://localhost/fiiitd?user=root&password=Pass@123&useSSL=false");
+            preparedStatement = connection.prepareStatement("SELECT * FROM employee WHERE `fbId` = ? ");
+            preparedStatement.setString(1, id);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            if (resultSet.next()) {
+                res = true;
+            }
+        } catch (ClassNotFoundException | SQLException e) {
+            e.printStackTrace();
+        } finally {
+            close();
+        }
+        return res;
+    }
 }

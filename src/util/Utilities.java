@@ -38,8 +38,10 @@ public class Utilities {
     public static ArrayList<Employee> getDefaulters(HashMap<String, Employee> employees, HashMap<String, Integer> tasksAssigned, int threshold) {
         ArrayList<Employee> result = new ArrayList<>();
         for (String id : tasksAssigned.keySet()) {
-            if (tasksAssigned.get(id) - employees.get(id).getTaskCount() > threshold)
-                result.add(employees.get(id));
+            if (tasksAssigned.containsKey(id) && employees.containsKey(id)) {
+                if (tasksAssigned.get(id) - employees.get(id).getTaskCount() > threshold)
+                    result.add(employees.get(id));
+            }
         }
         return result;
     }
