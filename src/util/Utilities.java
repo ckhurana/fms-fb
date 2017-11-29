@@ -15,8 +15,16 @@ import java.util.Date;
 
 public class Utilities {
 
-    public static boolean isValidTimeDiff(Timestamp timestamp, Timestamp createdTime, long timeMargin) {
-        return true;
+    public static boolean isValidTimeDiff(Timestamp postTimestamp, Timestamp doneTimestamp, long timeMargin, String diffIn) {
+        long diff = postTimestamp.getTime() - doneTimestamp.getTime();
+        diffIn = diffIn.toUpperCase();
+        if (diffIn.equals("MIN"))
+            return (diff / (60 * 1000)) <= timeMargin;
+        else if (diffIn.equals("SEC"))
+            return (diff / 1000) <= timeMargin;
+        else if (diffIn.equals("HOUR"))
+            return (diff / (60 * 60 * 1000)) <= timeMargin;
+        else return isValidTimeDiff(postTimestamp, doneTimestamp, timeMargin, "sec");
     }
 
     public enum JobType {
