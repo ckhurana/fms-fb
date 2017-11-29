@@ -1,3 +1,68 @@
 FIX
 
 ADDS MT17010 9711012240
+
+
+type:
+ELECTRICIAN
+SWEEPER
+GARDENER
+CARPENTER
+MASON
+
+
+
+ADDS <phone no.> <roll no.>
+ADDE <phone no.> <type>
+
+REQ <loc> <type> <complaint>
+
+
+
+
+
+
+
+Database Queries:
+
+Task Table
+
+CREATE TABLE task (
+    id INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
+    fbPostId VARCHAR(60) UNIQUE NOT NULL,
+    complaint TEXT,
+    userId VARCHAR(60) NOT NULL,
+    employeeId VARCHAR(60),
+    loc VARCHAR(50) NOT NULL,
+    timestamp TIMESTAMP,
+    type INT NOT NULL,
+    isDone TINYINT(1) DEFAULT 0,
+    isProcessed TINYINT(1) DEFAULT 0,
+    isError TINYINT(1) DEFAULT 0,
+    isLate TINYINT(1) DEFAULT 0
+);
+
+
+
+CREATE TABLE student (
+    fbId VARCHAR(60) PRIMARY KEY NOT NULL,
+    rollNo VARCHAR(20) UNIQUE NOT NULL,
+    firstName VARCHAR(60),
+    lastName VARCHAR(60),
+    phone VARCHAR(10)
+);
+
+
+CREATE TABLE employee (
+    fbId VARCHAR(60) PRIMARY KEY NOT NULL,
+    firstName VARCHAR(60),
+    lastName VARCHAR(60),
+    phone VARCHAR(10),
+    profession INT,
+    isBusy TINYINT(1)
+);
+
+
+
+CHECKS:
+check cross validity for student and employee
